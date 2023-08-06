@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #canvas {
+            background-color: rgb(40, 4, 74);
+            margin-top: 50px;
+        }
+
+        #counters {
+            font-size: large;
+            color: white;
+            position: absolute;
+            top: 305px;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soccer Pong!</title>
+</head>
+
+<body>
+    <div id="counters">
+        <span id="playerOneCounter">0</span>
+        x
+        <span id="playerTwoCounter">0</span>
+    </div>
+
+    <svg id="canvas" width="320" height="560">
+        <rect id="playerTwo" x="120" y="0" width="80" height="20" fill="white" />
+        <circle id="ball" cx="160" cy="280" r="15" fill="white" />
+        <rect id="playerOne" x="120" y="540" width="80" height="20" fill="white" />
+    </svg>
+
+    <script>
+
+        let model = {
+            ball: {
+                cx: 160,
+                cy: 280,
+                r: 15,
+                vx: randomSign(5),
+                vy: randomSign(5)
+            },
+            playerOne: {
+                x: 120,
+                y: 540,
+                vx: 0,
+                width: 80,
+                height: 20
+            },
+            playerTwo: {
+                x: 120,
+                y: 0,
+                vx: 0,
+                width: 80,
+                height: 20
+            },
+            counterPlayerOne: 0,
+            counterPlayerTwo: 0
+        }
+
+        let ballElement = document.querySelector('#ball')
+        let playerOneElement = document.querySelector('#playerOne')
+        let playerTwoElement = document.querySelector('#playerTwo')
+        let playerOneCounterElement = document.querySelector('#playerOneCounter')
+        let playerTwoCounterElement = document.querySelector('#playerTwoCounter')
+
+        function resetGame() {
+            model['ball']['cx'] = 160;
+            model['ball']['cy'] = 280;
+            model['ball']['vx'] = randomSign(5);
+            model['ball']['vy'] = randomSign(5);
+        }
+
+        function update() {
+
+            // ball logic
+            // top wall 
+            if ((model['ball']['cy'] - model['ball']['r']) <= -40) {
+                model['counterPlayerOne']++;
+                resetGame();
+            }
+            // right wall
+            if ((model['ball']['cx'] + model['ball']['r']) >= 320) {
+                model['ball']['vx'] = - Math.abs(model['ball']['vx'])
+            }
+            // bottom wall
+            if ((model['ball']['cy'] + model['ball']['r']) >= 600) {
+                model['counterPlayerTwo']++;
+                resetGame();
+            }
+            // left wall
+            if ((model['ball']['cx'] - model['ball']['r']) <= 0) {
+                model['ball']['vx'] = Math.abs(model['ball']['vx'])
+            }
+
+            // ball hits player one
+            if (model['ball']['cy'] + model['ball']['r'] >= model['playerOne']['y']
+                && model['ball']['cx'] >= model['playerOne']['x']
+                && model['ball']['cx'] <= model['playerOne']['x'] + model['playerOne']['width']) {
+
+                if (model['playerOne']['vx'] > 0) {
+                    model['ball']['vx'] = - Math.abs(model['ball']['vx'])
+                }
+                else if (model['playerOne']['vx'] < 0) {
+                    model['ball']['vx'] = Math.abs(model['ball']['vx'])
+                }
+
+                model['ball']['vy'] = - Math.abs(model['ball']['vy'])
+            }
+
+            // ball hits player two
+            if ((model['ball']['cy'] - model['ball']['r']) <= (model['playerTwo']['y'] + model['playerTwo']['height'])
+                && model['ball']['cx'] >= model['playerTwo']['x']
+                && model['ball']['cx'] <= model['playerTwo']['x'] + model['playerTwo']['width']) {
+
+                if (model['playerTwo']['vx'] > 0) {
+                    model['ball']['vx'] = - Math.abs(model['ball']['vx'])
+                }
+                else if (model['playerTwo']['vx'] < 0) {
+                    model['ball']['vx'] = Math.abs(model['ball']['vx'])
+                }
+                model['ball']['vy'] = Math.abs(model['ball']['vy'])
+            }
+
+            model['ball']['cx'] += model['ball']['vx']
+            model['ball']['cy'] += model['ball']['vy']
+
+            // playerTwo logic
+            if (model['ball']['vx'] > 0) {
+                model['playerTwo']['vx'] = 3
+            } else if (model['ball']['vx'] < 0) {
+                model['playerTwo']['vx'] = -3
+            }
+
+            let nextPlayerTwoPosition = model['playerTwo']['x'] + model['playerTwo']['vx']
+            if (nextPlayerTwoPosition + 80 < 320 && nextPlayerTwoPosition > 0) {
+                // 0 - 9
+                let randomNumber = Math.floor(Math.random() * 10);
+                if (randomNumber < 9) {
+                    model['playerTwo']['x'] += model['playerTwo']['vx']
+                }
+            }
+
+            // playerOne logic 
+            let nextPlayerOnePosition = model['playerOne']['x'] + model['playerOne']['vx']
+
+            if (nextPlayerOnePosition + 80 < 320 && nextPlayerOnePosition > 0) {
+                model['playerOne']['x'] += model['playerOne']['vx']
+            }
+        }
+
+
+        function render() {
+            ballElement.setAttribute('cx', model['ball']['cx'])
+            ballElement.setAttribute('cy', model['ball']['cy'])
+            playerOneElement.setAttribute('x', model['playerOne']['x'])
+            playerTwoElement.setAttribute('x', model['playerTwo']['x'])
+            playerOneCounterElement.innerHTML = model['counterPlayerOne']
+            playerTwoCounterElement.innerHTML = model['counterPlayerTwo']
+        }
+
+        const step = () => {
+            render()
+            update()
+            requestAnimationFrame(step)
+        }
+
+        function main() {
+
+            document.addEventListener("keydown", (e) => {
+                switch (e.key) {
+                    case "a": case "A": model['playerOne']['vx'] = -3
+                        break;
+                    case "d": case "D": model['playerOne']['vx'] = 3
+                        break;
+                    default: model['playerOne']['vx'] = 0
+                }
+            })
+
+            requestAnimationFrame(step)
+        }
+
+        function randomSign(n) {
+
+            let randomNumber = Math.floor(Math.random() * 2);
+
+            if (randomNumber)
+                return Math.abs(n)
+            return -Math.abs(n)
+        }
+
+        main()
+    </script>
+
+</body>
+
+</html>
